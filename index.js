@@ -12,6 +12,14 @@ connection.once('open', () => {
   console.log("MongoDB database connection establishes successfully");
 });
 
+//Schemas
+const UserSchema = new mongoose.Schema({
+  username: {type: String, unique: true, required: true}
+})
+const User = mongoose.model('User', UserSchema)
+
+
+
 app.use(cors())
 app.use(express.static('public'))
 app.use(bodyParser.urlencoded({ extended: true }))
@@ -19,10 +27,8 @@ app.get('/', (req, res) => {
   res.sendFile(__dirname + '/views/index.html')
 });
 
-console.log(process.env['MONGO_URI']);
-console.log(process.env.PORT);
-
-
 const listener = app.listen(process.env.PORT, () => {
   console.log('Your app is listening on port ' + listener.address().port)
 })
+
+
