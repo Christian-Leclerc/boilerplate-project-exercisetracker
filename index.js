@@ -24,6 +24,15 @@ const UserSchema = new mongoose.Schema({
 );
 const User = mongoose.model('User', UserSchema);
 
+const ExerciseSchema = new mongoose.Schema({
+  username: String,
+  description: String,
+  duration: Number,
+  date: Date
+}, 
+{ versionKey: false }
+);
+const Exercise = mongoose.model('Exercise', ExerciseSchema);
 
 
 app.use(cors())
@@ -65,6 +74,58 @@ app.route('/api/users')
     res.json({error: "You need to input a name"})
   }
 })
+
+//Post exercises
+app.post('/api/users/:_id/exercises', async (req, res) => {
+  const id = req.params._id;
+  let {description, duration, date}  = req.body;
+  //Date validation
+  if (date === "") {
+    date = new Date();
+  } else {
+    const checkDate = new Date(date);
+    if (isNaN(checkDate.getTime())) {
+      return res.json({error: "Invalid Date format: YYYY-MM-DD"})
+    } else {
+      date = checkDate;
+    }
+  }
+  //Description validation
+  if (description === "" || !isNaN(+description)) {
+    return res.json({error: "You must input a valid description name!"})
+  }
+  //Duration validation
+  if (duration === "" || isNaN(+duration)) {
+    return res.json({error: "You must input an integer!"})
+  }
+  try {
+    const userFound = await User.findById(id);
+    if (!userFound) {
+      console.log(id);
+      return res.send("This user ID doesn't exits")
+    } else {
+      const exercise = await Exercise.create({
+        username: userFound.username,
+        description,
+        duration,
+        date,
+        user_id: userFound._id
+      })
+
+      return res.json({
+        username: exercise.username,
+        description: exercise.description,
+        duration: exercise.duration,
+        date: exercise.date.toDateString(),
+        _id: exercise._id
+      });
+    }
+  } catch(err) {
+    console.log(err);
+    return res.json({error: "You must input a valid ID (a string of 12 bytes or a string of 24 hex characters)"});
+  }
+})
+
 
 const listener = app.listen(process.env.PORT || 3000, () => {
   console.log('Your app is listening on port ' + listener.address().port)
