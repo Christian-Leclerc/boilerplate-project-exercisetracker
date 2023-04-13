@@ -35,15 +35,34 @@ app.get('/', (req, res) => {
 
 //Post username
 app.route('/api/users')
+.get(async (req, res) => {
+  try {
+    const users = await User.find({}).select('_id username');
+    if (!users) {
+      return res.json("No users in database")
+    } else {
+      return res.json(users);
+    }
+  } catch(err) {
+    res.send(err);
+  }
+})
 .post(async (req, res) => {
   const username = req.body.username
   try{
-    const user = await User.create({
-      username
-    })
-    res.json(user);
+    const userFound = await User.findOne({username})
+    if (userFound) {
+      console.log(userFound);
+      return res.json(userFound);
+    } else {
+      const user = await User.create({
+        username
+      })
+      res.json(user);
+    }
   } catch(err) {
-    res.send(err);
+    console.log(err);
+    res.json({error: "You need to input a name"})
   }
 })
 
