@@ -34,7 +34,6 @@ const ExerciseSchema = new mongoose.Schema({
 );
 const Exercise = mongoose.model('Exercise', ExerciseSchema);
 
-
 app.use(cors())
 app.use(express.static('public'))
 app.use(bodyParser.urlencoded({ extended: true }))
@@ -42,9 +41,19 @@ app.get('/', (req, res) => {
   res.sendFile(__dirname + '/views/index.html')
 })
 
+app.get('/api/users/clear', async (req, res) => {
+  try {
+    await User.deleteMany({});
+    await Exercise.deleteMany({});
+  } catch(err) {
+    return res.send(err);
+  }
+  return res.json("all clear");
+})
 //Post username
 app.route('/api/users')
 .get(async (req, res) => {
+  console.log(req.params, req.body, req.query);
   try {
     const users = await User.find({}).select('_id username');
     if (!users) {
@@ -58,6 +67,7 @@ app.route('/api/users')
 })
 .post(async (req, res) => {
   const username = req.body.username
+  console.log(req.params, req.body, req.query);
   try{
     const userFound = await User.findOne({username})
     if (userFound) {
@@ -75,12 +85,17 @@ app.route('/api/users')
   }
 })
 
+//GET logs
+
+
 //Post exercises
 app.post('/api/users/:_id/exercises', async (req, res) => {
   const id = req.params._id;
   let {description, duration, date}  = req.body;
+  console.log(req.params._id, req.body, req.query);
+  let userObject = {};
   //Date validation
-  if (date === "") {
+  if (!date) {
     date = new Date();
   } else {
     const checkDate = new Date(date);
@@ -90,6 +105,7 @@ app.post('/api/users/:_id/exercises', async (req, res) => {
       date = checkDate;
     }
   }
+  console.log(date);
   //Description validation
   if (description === "" || !isNaN(+description)) {
     return res.json({error: "You must input a valid description name!"})
@@ -100,6 +116,7 @@ app.post('/api/users/:_id/exercises', async (req, res) => {
   }
   try {
     const userFound = await User.findById(id);
+    console.log(userFound);
     if (!userFound) {
       console.log(id);
       return res.send("This user ID doesn't exits")
@@ -111,14 +128,18 @@ app.post('/api/users/:_id/exercises', async (req, res) => {
         date,
         user_id: userFound._id
       })
-
-      return res.json({
-        username: exercise.username,
-        description: exercise.description,
-        duration: exercise.duration,
-        date: exercise.date.toDateString(),
-        _id: exercise._id
-      });
+      if (!exercise) {
+        res.send("Something went wrong!")
+      } else {
+        userObject = {
+          username: exercise.username,
+          description: exercise.description,
+          duration: exercise.duration,
+          date: exercise.date.toDateString(),
+          _id: exercise._id
+        }
+        return res.json(userObject);
+      }
     }
   } catch(err) {
     console.log(err);
